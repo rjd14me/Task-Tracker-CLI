@@ -65,9 +65,30 @@ def cmd_list_in_progress(args):
     return 0
 
 
+def print_help_text():
+    print("help - show this list of commands")
+    print("add <task> - add your new task to the list")
+    print("update <task id> <new description> - adds a new description to a task already in the list")
+    print("delete <task id> - deletes a task from the list")
+    print("start <task id> - marks a task as in progress.")
+    print("done <task id> - marks a task as been completed.")
+    print("list - lists the current task list")
+    print("list-done - lists all the tasks that have been completed")
+    print("list-not-done - lists all of the tasks that have not been completed.")
+    print("list-in-progress - lists all the tasks currently been done.")
+
+
+def cmd_help(args):
+    print_help_text()
+    return 0
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description="Task Tracker")
     subparsers = parser.add_subparsers(dest="command")
+
+    help_parser = subparsers.add_parser("help", help="Show available commands")
+    help_parser.set_defaults(func=cmd_help)
 
     add_parser = subparsers.add_parser("add", help="Add a new task")
     add_parser.add_argument("description", nargs="+", help="Task description")
@@ -116,7 +137,9 @@ def run_prompt():
         parts = raw.split()
         cmd = parts[0]
         args = parts[1:]
-        if cmd == "add":
+        if cmd == "help":
+            print_help_text()
+        elif cmd == "add":
             if not args:
                 print("Need a description.")
                 continue
