@@ -1,4 +1,4 @@
-# Task Tracker CLI
+# FlowTask (v1.1)
 My personal solution to the [Task Tracker](https://roadmap.sh/projects/task-tracker) problem on [Roadmap.sh](https://roadmap.sh/dashboard).
 
 ## Features
@@ -15,7 +15,7 @@ My personal solution to the [Task Tracker](https://roadmap.sh/projects/task-trac
 - User feedback: colored output, friendly prompts, and error messaging.
 
 ## commands
-```bash
+```
 add <task> - add you new task to the list
 update <task id> <new description> - adds a new description to a task already in the list
 delete <task id> - deletes a task from the list
