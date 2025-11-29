@@ -7,7 +7,7 @@ My personal solution to the [Task Tracker](https://roadmap.sh/projects/task-trac
 git clone https://github.com/rjd14me/FlowTask.git
 cd FlowTask
 ```
-###
+### Getting Started
 ```bash
 python mainCLI.py 
 ```
