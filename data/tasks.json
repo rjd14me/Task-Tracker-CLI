@@ -1,1 +1,23 @@
-[]
+[
+    {
+        "id": 1,
+        "description": "56",
+        "status": "To Do",
+        "creation_date": "2025-11-30T13:19:06.631040",
+        "due_date": "12/12/2025"
+    },
+    {
+        "id": 2,
+        "description": "43",
+        "status": "To Do",
+        "creation_date": "2025-11-30T13:20:55.187847",
+        "due_date": "No Due Date"
+    },
+    {
+        "id": 3,
+        "description": "43",
+        "status": "To Do",
+        "creation_date": "2025-11-30T13:23:01.440299",
+        "due_date": "12/12/2026"
+    }
+]

@@ -1,4 +1,4 @@
-# FlowTask (v1.4)
+# FlowTask (v1.5)
 My personal solution to the [Task Tracker](https://roadmap.sh/projects/task-tracker) problem on [Roadmap.sh](https://roadmap.sh/dashboard).
 
 # How to Demo
@@ -48,7 +48,7 @@ help - displays this list of commands
 TASK-TRACKER/
   task_cli.py
   data/
-    tasks.json  # created automatically while running program
+    tasks.json 
   taskmanager/
     __init__.py
     storage.py

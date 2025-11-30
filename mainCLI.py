@@ -5,6 +5,16 @@ from datetime import datetime
 from taskmanager.manage import add_task, update_task, delete_task, mark_done, mark_in_progress, list_tasks
 
 
+def display_task_list():
+    tasks = list_tasks()
+    print("Current tasks:")
+    if not tasks:
+        print("  (no tasks)")
+        return
+    for task in tasks:
+        print(f"  {format_task(task)}")
+
+
 def format_task(task):
     creation_date_raw = task.get("creation_date")
     creation_date = "Unknown"
@@ -19,16 +29,20 @@ def format_task(task):
 
 
 def prompt_due_date():
-    raw = input("Enter Due Date (DD/MM/YYYY) or press Enter for 'No Due Date': ").strip()
-    if not raw:
-        return "No Due Date"
-    try:
-        # Validate and normalize format.
-        parsed = datetime.strptime(raw, "%d/%m/%Y")
+    while True:
+        raw = input("Enter Due Date (DD/MM/YYYY) or press Enter for 'No Due Date': ").strip()
+        if not raw:
+            return "No Due Date"
+        try:
+            # Validate and normalize format.
+            parsed = datetime.strptime(raw, "%d/%m/%Y")
+        except ValueError:
+            print("Invalid date format. Please use DD/MM/YYYY.")
+            continue
+        if parsed.date() <= datetime.now().date():
+            print("Only future dates are allowed.")
+            continue
         return parsed.strftime("%d/%m/%Y")
-    except ValueError:
-        print("Invalid date format. Please use DD/MM/YYYY. Leaving as 'No Due Date'.")
-        return "No Due Date"
 
 
 def cmd_add(args):
@@ -36,6 +50,7 @@ def cmd_add(args):
     due_date = prompt_due_date()
     add_task(description, due_date)
     print("Task added.")
+    display_task_list()
     return 0
 
 
@@ -43,24 +58,28 @@ def cmd_update(args):
     description = " ".join(args.description)
     update_task(args.task_id, description)
     print("Task updated.")
+    display_task_list()
     return 0
 
 
 def cmd_delete(args):
     delete_task(args.task_id)
     print("Task deleted.")
+    display_task_list()
     return 0
 
 
 def cmd_done(args):
     mark_done(args.task_id)
     print("Task marked as done.")
+    display_task_list()
     return 0
 
 
 def cmd_start(args):
     mark_in_progress(args.task_id)
     print("Task marked as in progress.")
+    display_task_list()
     return 0
 
 
@@ -175,6 +194,7 @@ def run_prompt():
             due_date = prompt_due_date()
             add_task(description, due_date)
             print("Task added.")
+            display_task_list()
         elif cmd == "update":
             if len(args) < 2:
                 print("Need id and description.")
@@ -186,6 +206,7 @@ def run_prompt():
                 continue
             update_task(task_id, " ".join(args[1:]))
             print("Task updated.")
+            display_task_list()
         elif cmd == "delete":
             if not args:
                 print("Need an id.")
@@ -197,6 +218,7 @@ def run_prompt():
                 continue
             delete_task(task_id)
             print("Task deleted.")
+            display_task_list()
         elif cmd == "start":
             if not args:
                 print("Need an id.")
@@ -208,6 +230,7 @@ def run_prompt():
                 continue
             mark_in_progress(task_id)
             print("Task marked as in progress.")
+            display_task_list()
         elif cmd == "done":
             if not args:
                 print("Need an id.")
@@ -219,6 +242,7 @@ def run_prompt():
                 continue
             mark_done(task_id)
             print("Task marked as done.")
+            display_task_list()
         elif cmd == "list":
             for task in list_tasks():
                 print(format_task(task))
