@@ -4,6 +4,12 @@ import sys
 from taskmanager.manage import add_task, update_task, delete_task, mark_done, mark_in_progress, list_tasks
 
 
+def format_task(task):
+    creation_date = task.get("creation_date", "Unknown")
+    status = task.get("status", "To Do")
+    return f"{task['id']}: {status} - {task['description']} (Created: {creation_date})"
+
+
 def cmd_add(args):
     description = " ".join(args.description)
     add_task(description)
@@ -39,14 +45,14 @@ def cmd_start(args):
 def cmd_list(args):
     tasks = list_tasks()
     for task in tasks:
-        print(f"{task['id']}: {task['status']} - {task['description']}")
+        print(format_task(task))
     return 0
 
 
 def cmd_list_done(args):
     tasks = list_tasks("done")
     for task in tasks:
-        print(f"{task['id']}: {task['status']} - {task['description']}")
+        print(format_task(task))
     return 0
 
 
@@ -54,14 +60,14 @@ def cmd_list_not_done(args):
     tasks = list_tasks()
     for task in tasks:
         if task.get("status") != "done":
-            print(f"{task['id']}: {task['status']} - {task['description']}")
+            print(format_task(task))
     return 0
 
 
 def cmd_list_in_progress(args):
     tasks = list_tasks("in-progress")
     for task in tasks:
-        print(f"{task['id']}: {task['status']} - {task['description']}")
+        print(format_task(task))
     return 0
 
 
@@ -191,17 +197,17 @@ def run_prompt():
             print("Task marked as done.")
         elif cmd == "list":
             for task in list_tasks():
-                print(f"{task['id']}: {task['status']} - {task['description']}")
+                print(format_task(task))
         elif cmd == "list-done":
             for task in list_tasks("done"):
-                print(f"{task['id']}: {task['status']} - {task['description']}")
+                print(format_task(task))
         elif cmd == "list-not-done":
             for task in list_tasks():
                 if task.get("status") != "done":
-                    print(f"{task['id']}: {task['status']} - {task['description']}")
+                    print(format_task(task))
         elif cmd == "list-in-progress":
             for task in list_tasks("in-progress"):
-                print(f"{task['id']}: {task['status']} - {task['description']}")
+                print(format_task(task))
         else:
             print("Unknown command.")
 
