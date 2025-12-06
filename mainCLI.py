@@ -4,6 +4,55 @@ from datetime import datetime
 
 from taskmanager.manage import add_task, update_task, delete_task, mark_done, mark_in_progress, list_tasks
 
+# Edit these maps to add/remove shorthand forms users can type for each command.
+COMMAND_ALIASES = {
+    "help": ["help", "h", "?"],
+    "add": ["add", "a"],
+    "update": ["update", "u"],
+    "delete": ["delete", "del", "rm"],
+    "start": ["start", "s"],
+    "done": ["done", "d"],
+    "list": ["list", "ls", "l"],
+    "exit": ["exit", "quit", "q"],
+    "list-done": ["list-done", "list done", "list-d", "list d", "l-d", "l d", "ld"],
+    "list-not-done": ["list-not-done", "list not done", "list-nd", "list nd", "l-nd", "l nd", "lnd"],
+    "list-in-progress": [
+        "list-in-progress",
+        "list in progress",
+        "list-ip",
+        "list ip",
+        "l-ip",
+        "l ip",
+        "lip",
+    ],
+}
+
+HELP_TEXT = [
+    ("help", "show this list of commands"),
+    ("add", "add your new task to the list"),
+    ("update", "update the description of a task already in the list"),
+    ("delete", "delete a task from the list"),
+    ("start", "mark a task as in progress"),
+    ("done", "mark a task as completed"),
+    ("list", "list the current task list"),
+    ("list-done", "list tasks that have been completed"),
+    ("list-not-done", "list tasks that are not yet completed"),
+    ("list-in-progress", "list tasks currently in progress"),
+    ("exit", "exit the program"),
+]
+
+
+def _build_alias_lookup():
+    lookup = []
+    for canonical, variants in COMMAND_ALIASES.items():
+        for variant in variants:
+            lookup.append((variant.lower().split(), canonical))
+    lookup.sort(key=lambda entry: len(entry[0]), reverse=True)
+    return lookup
+
+
+ALIAS_LOOKUP = _build_alias_lookup()
+
 
 def display_task_list():
     tasks = list_tasks()
@@ -26,6 +75,36 @@ def format_task(task):
     due_date = task.get("due_date", "No Due Date")
     status = task.get("status", "To Do")
     return f"{task['id']}: {status} - {task['description']} (Created: {creation_date}, Due: {due_date})"
+
+
+def aliases_for(command):
+    """Return aliases suitable for argparse (single tokens only)."""
+    return [
+        alias
+        for alias in COMMAND_ALIASES.get(command, [])
+        if alias != command and " " not in alias
+    ]
+
+
+def normalize_command_tokens(tokens):
+    """Normalize raw tokens to a canonical command and return leftover args."""
+    if not tokens:
+        return None, []
+    lowered = [token.lower() for token in tokens]
+    for alias_tokens, canonical in ALIAS_LOOKUP:
+        if lowered[: len(alias_tokens)] == alias_tokens:
+            return canonical, tokens[len(alias_tokens) :]
+    return None, tokens[1:]
+
+
+def normalize_cli_args(argv):
+    """Rewrite argv so argparse sees the canonical command names."""
+    if argv is None:
+        return None
+    command, remaining = normalize_command_tokens(argv)
+    if command in (None, "exit"):
+        return argv
+    return [command] + remaining
 
 
 def prompt_due_date():
@@ -113,16 +192,13 @@ def cmd_list_in_progress(args):
 
 
 def print_help_text():
-    print("help - show this list of commands")
-    print("add <task> - add your new task to the list")
-    print("update <task id> <new description> - adds a new description to a task already in the list")
-    print("delete <task id> - deletes a task from the list")
-    print("start <task id> - marks a task as in progress.")
-    print("done <task id> - marks a task as been completed.")
-    print("list - lists the current task list")
-    print("list-done - lists all the tasks that have been completed")
-    print("list-not-done - lists all of the tasks that have not been completed.")
-    print("list-in-progress - lists all the tasks currently been done.")
+    print("Available commands (aliases in brackets):")
+    for command, description in HELP_TEXT:
+        alias_text = ", ".join(
+            alias for alias in COMMAND_ALIASES.get(command, []) if alias != command
+        )
+        suffix = f" [{alias_text}]" if alias_text else ""
+        print(f"{command}{suffix} - {description}")
 
 
 def cmd_help(args):
@@ -134,40 +210,64 @@ def build_parser():
     parser = argparse.ArgumentParser(description="Task Tracker")
     subparsers = parser.add_subparsers(dest="command")
 
-    help_parser = subparsers.add_parser("help", help="Show available commands")
+    help_parser = subparsers.add_parser(
+        "help", help="Show available commands", aliases=aliases_for("help")
+    )
     help_parser.set_defaults(func=cmd_help)
 
-    add_parser = subparsers.add_parser("add", help="Add a new task")
+    add_parser = subparsers.add_parser(
+        "add", help="Add a new task", aliases=aliases_for("add")
+    )
     add_parser.add_argument("description", nargs="+", help="Task description")
     add_parser.set_defaults(func=cmd_add)
 
-    update_parser = subparsers.add_parser("update", help="Update a task description")
+    update_parser = subparsers.add_parser(
+        "update", help="Update a task description", aliases=aliases_for("update")
+    )
     update_parser.add_argument("task_id", type=int, help="ID of the task to update")
     update_parser.add_argument("description", nargs="+", help="New description")
     update_parser.set_defaults(func=cmd_update)
 
-    delete_parser = subparsers.add_parser("delete", help="Delete a task")
+    delete_parser = subparsers.add_parser(
+        "delete", help="Delete a task", aliases=aliases_for("delete")
+    )
     delete_parser.add_argument("task_id", type=int, help="ID of the task to delete")
     delete_parser.set_defaults(func=cmd_delete)
 
-    start_parser = subparsers.add_parser("start", help="Mark a task as in progress")
+    start_parser = subparsers.add_parser(
+        "start", help="Mark a task as in progress", aliases=aliases_for("start")
+    )
     start_parser.add_argument("task_id", type=int, help="ID of the task to update")
     start_parser.set_defaults(func=cmd_start)
 
-    done_parser = subparsers.add_parser("done", help="Mark a task as done")
+    done_parser = subparsers.add_parser(
+        "done", help="Mark a task as done", aliases=aliases_for("done")
+    )
     done_parser.add_argument("task_id", type=int, help="ID of the task to update")
     done_parser.set_defaults(func=cmd_done)
 
-    list_parser = subparsers.add_parser("list", help="List all tasks")
+    list_parser = subparsers.add_parser(
+        "list", help="List all tasks", aliases=aliases_for("list")
+    )
     list_parser.set_defaults(func=cmd_list)
 
-    list_done_parser = subparsers.add_parser("list-done", help="List done tasks")
+    list_done_parser = subparsers.add_parser(
+        "list-done", help="List done tasks", aliases=aliases_for("list-done")
+    )
     list_done_parser.set_defaults(func=cmd_list_done)
 
-    list_not_done_parser = subparsers.add_parser("list-not-done", help="List tasks that are not done")
+    list_not_done_parser = subparsers.add_parser(
+        "list-not-done",
+        help="List tasks that are not done",
+        aliases=aliases_for("list-not-done"),
+    )
     list_not_done_parser.set_defaults(func=cmd_list_not_done)
 
-    list_in_progress_parser = subparsers.add_parser("list-in-progress", help="List tasks in progress")
+    list_in_progress_parser = subparsers.add_parser(
+        "list-in-progress",
+        help="List tasks in progress",
+        aliases=aliases_for("list-in-progress"),
+    )
     list_in_progress_parser.set_defaults(func=cmd_list_in_progress)
 
     return parser
@@ -179,14 +279,15 @@ def run_prompt():
         raw = input("command> ").strip()
         if not raw:
             continue
-        if raw.lower() == "exit":
+        command, args = normalize_command_tokens(raw.split())
+        if command == "exit":
             break
-        parts = raw.split()
-        cmd = parts[0]
-        args = parts[1:]
-        if cmd == "help":
+        if command is None:
+            print("Unknown command.")
+            continue
+        if command == "help":
             print_help_text()
-        elif cmd == "add":
+        elif command == "add":
             if not args:
                 print("Need a description.")
                 continue
@@ -195,7 +296,7 @@ def run_prompt():
             add_task(description, due_date)
             print("Task added.")
             display_task_list()
-        elif cmd == "update":
+        elif command == "update":
             if len(args) < 2:
                 print("Need id and description.")
                 continue
@@ -207,7 +308,7 @@ def run_prompt():
             update_task(task_id, " ".join(args[1:]))
             print("Task updated.")
             display_task_list()
-        elif cmd == "delete":
+        elif command == "delete":
             if not args:
                 print("Need an id.")
                 continue
@@ -219,7 +320,7 @@ def run_prompt():
             delete_task(task_id)
             print("Task deleted.")
             display_task_list()
-        elif cmd == "start":
+        elif command == "start":
             if not args:
                 print("Need an id.")
                 continue
@@ -231,7 +332,7 @@ def run_prompt():
             mark_in_progress(task_id)
             print("Task marked as in progress.")
             display_task_list()
-        elif cmd == "done":
+        elif command == "done":
             if not args:
                 print("Need an id.")
                 continue
@@ -243,17 +344,17 @@ def run_prompt():
             mark_done(task_id)
             print("Task marked as done.")
             display_task_list()
-        elif cmd == "list":
+        elif command == "list":
             for task in list_tasks():
                 print(format_task(task))
-        elif cmd == "list-done":
+        elif command == "list-done":
             for task in list_tasks("done"):
                 print(format_task(task))
-        elif cmd == "list-not-done":
+        elif command == "list-not-done":
             for task in list_tasks():
                 if task.get("status") != "done":
                     print(format_task(task))
-        elif cmd == "list-in-progress":
+        elif command == "list-in-progress":
             for task in list_tasks("in-progress"):
                 print(format_task(task))
         else:
@@ -262,7 +363,9 @@ def run_prompt():
 
 def main(argv=None):
     parser = build_parser()
-    args = parser.parse_args(argv)
+    raw_args = argv if argv is not None else sys.argv[1:]
+    normalized_args = normalize_cli_args(raw_args)
+    args = parser.parse_args(normalized_args)
 
     if not getattr(args, "command", None):
         return run_prompt()
